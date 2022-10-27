@@ -64,7 +64,7 @@ class MNIST_NeuralNet {
     public static boolean trained = false;
 
     public static void main(String[] args) {
-        try {setData();} catch (Exception e) {System.out.println(e);}
+        try {setData("mnist_train.csv");} catch (Exception e) {System.out.println(e);}
 
         Scanner scanner = new Scanner(System.in);
 
@@ -84,17 +84,52 @@ class MNIST_NeuralNet {
             }
         } catch (Exception e){ System.out.println(e);}*/
         trainNetwork();
+
     }
 
     // Method to print the accuracy of the network after each epoch
     public static void printAccuracy(int[] correct, int[] all){
         System.out.println();
         for (int i = 0; i < correct.length; i++){
-            System.out.print(i + " = " + correct[i] + "/" + all[i]);
+            System.out.print(i + " = " + correct[i] + "/" + all[i] + " ");
             if (i == 5){System.out.println();}
         }
         System.out.print(" Accuracy = " + Arrays.stream(correct).sum() + "/60000 " + ((Arrays.stream(correct).sum()/60000.0)*100) + "%");
         System.out.println();
+    }
+
+    public static void runTesting(){
+        Arrays.fill(trainingData, null);
+        try {setData("mnist_test.csv");} catch (Exception e) {System.out.println(e);}
+
+        int[] totalCorrect = new int[10];
+        int[] totalOfNums = new int[10];
+
+        for (int i = 0; i < 10000; i++){
+            double[] hOutput = (forwardFeed(trainingData[i].getPixleValues()));
+            double[] fOutput = (forwardFeed(hOutput));
+
+            // Find the correct classification of input and the Networks calculated digit
+            int maxAt = 0;
+            int maxAt2 = 0;
+
+            // Gets max from inputs one hot and from the networks final layer
+            for (int idx = 0; idx < fOutput.length; idx++) {
+                maxAt = fOutput[idx] > fOutput[maxAt] ? idx : maxAt;
+            }
+            for (int idx = 0; idx < trainingData[i].getOneHot().length; idx++) {
+                maxAt2 = (trainingData[i].getOneHot())[idx] > (trainingData[i].getOneHot())[maxAt2] ? idx : maxAt2;
+            }
+
+            // Add one to totalCorrect if the networks output is correct
+            if (maxAt2 == maxAt){
+                totalCorrect[maxAt] += 1;
+            }
+            // Keeps track of total numbers
+            totalOfNums[maxAt2] += 1; 
+
+            printAccuracy(totalCorrect, totalOfNums);
+        }
     }
 
     public static void loadNetwork(){
@@ -220,14 +255,16 @@ class MNIST_NeuralNet {
             System.out.println("Epoch: " + kms);
             printAccuracy(totalCorrect, totalOfNums);
         }
+        runTesting();
+
     }
 
-    public static void setData() throws Exception {
+    public static void setData(String file) throws Exception {
 
         // Setup for the file reader to read data
         BufferedReader fileReader = null;
         final String Delimiter = ",";
-        fileReader = new BufferedReader(new FileReader("mnist_train.csv"));
+        fileReader = new BufferedReader(new FileReader(file));
         String line = "";
 
         // Keeping track of current # of inputs
